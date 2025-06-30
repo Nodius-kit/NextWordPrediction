@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "lib": ["DOM", "DOM.Iterable", "ES2024"],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "declaration": true,
+    "useDefineForClassFields": true,
+    "sourceMap": true,
+    "jsx": "react-jsx",
+    "baseUrl": "./",
+    "outDir": "./compiled",
+    "rootDir": "src",
+    "declarationDir": "types",
+    "allowJs": false,
+    "strictFunctionTypes": true,
+    "strictNullChecks": true,
+    "strictPropertyInitialization": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "incremental": true,
+    "allowSyntheticDefaultImports": true,
+    "alwaysStrict": true
+  },
+
+  "include": ["./src/**/*.ts", "./src/**/*.tsx", "src"],
+  "exclude": [
+    "node_modules", "dist"
+  ],
+}

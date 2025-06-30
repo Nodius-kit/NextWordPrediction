@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="DeepDetect"/>
+    <meta name="format-detection" content="telephone=no, date=no, email=no, address=no"/>
+    <title>Test Next Word Prediction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .status.ready {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .status-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .loading .status-icon {
+            background: #ffeaa7;
+            animation: pulse 2s infinite;
+        }
+
+        .ready .status-icon {
+            background: #28a745;
+            color: white;
+        }
+
+        .error .status-icon {
+            background: #dc3545;
+            color: white;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .form-container {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .suggestions-container {
+            margin-top: 30px;
+        }
+
+        .suggestions-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .suggestions-header h3 {
+            color: #555;
+            font-size: 1.2rem;
+        }
+
+        .suggestion-type {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .suggestions-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            min-height: 60px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .suggestion-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            transform: translateY(0);
+        }
+
+        .suggestion-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .suggestion-btn:active {
+            transform: translateY(0);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .stats h4 {
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #4facfe;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .content {
+                padding: 25px;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .suggestions-grid {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🤖 Next Word Prediction</h1>
+        <p>AI-powered text completion and word prediction</p>
+    </div>
+
+    <div class="content">
+        <!-- Status Section -->
+        <div id="status" class="status loading">
+            <div class="status-icon">⏳</div>
+            <div>
+                <strong>Initializing model...</strong>
+                <div>Loading language data and building predictions</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="initBtn" class="btn btn-primary">Initialize Model</button>
+            <button id="resetBtn" class="btn btn-secondary" disabled>Reset Model</button>
+        </div>
+
+        <!-- Input Form -->
+        <div class="form-container">
+            <div class="input-group">
+                <label for="textInput" autocomplete="off">Type your text:</label>
+                <input
+                        type="text"
+                        id="textInput"
+                        class="text-input"
+                        placeholder="Start typing to see predictions..."
+                        disabled
+                >
+            </div>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="suggestions-container">
+            <div class="suggestions-header">
+                <h3>Suggestions</h3>
+                <span id="suggestionType" class="suggestion-type">Ready</span>
+            </div>
+            <div id="suggestionsGrid" class="suggestions-grid">
+                <div class="empty-state">Initialize the model to start getting predictions</div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <h4>📊 Model Statistics</h4>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div id="languageStat" class="stat-value">EN</div>
+                    <div class="stat-label">Language</div>
+                </div>
+                <div class="stat-item">
+                    <div id="predictionsStat" class="stat-value">0</div>
+                    <div class="stat-label">Predictions Made</div>
+                </div>
+                <div class="stat-item">
+                    <div id="suggestionsStat" class="stat-value">0</div>
+                    <div class="stat-label">Suggestions Shown</div>
+                </div>
+                <div class="stat-item">
+                    <div id="responseStat" class="stat-value">0ms</div>
+                    <div class="stat-label">Avg Response Time</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { PredictionModel } from './src/predictionModel.ts';
+
+    class PredictionInterface {
+        constructor() {
+            this.model = new PredictionModel({
+                debug:true
+            });
+            this.stats = {
+                predictions: 0,
+                suggestions: 0,
+                responseTimes: []
+            };
+            this.initializeElements();
+            this.attachEventListeners();
+        }
+
+        initializeElements() {
+            this.elements = {
+                status: document.getElementById('status'),
+                initBtn: document.getElementById('initBtn'),
+                resetBtn: document.getElementById('resetBtn'),
+                textInput: document.getElementById('textInput'),
+                suggestionType: document.getElementById('suggestionType'),
+                suggestionsGrid: document.getElementById('suggestionsGrid'),
+                languageStat: document.getElementById('languageStat'),
+                predictionsStat: document.getElementById('predictionsStat'),
+                suggestionsStat: document.getElementById('suggestionsStat'),
+                responseStat: document.getElementById('responseStat')
+            };
+        }
+
+        attachEventListeners() {
+            this.elements.initBtn.addEventListener('click', () => this.initializeModel());
+            this.elements.resetBtn.addEventListener('click', () => this.resetModel());
+            this.elements.textInput.addEventListener('input', (e) => this.handleInput(e));
+            this.elements.suggestionsGrid.addEventListener('click', (e) => this.handleSuggestionClick(e));
+        }
+
+        async initializeModel() {
+            try {
+                this.updateStatus('loading', 'Initializing model...', 'Loading language data and building predictions');
+                this.elements.initBtn.disabled = true;
+
+                await this.model.initialize('en');
+
+                this.updateStatus('ready', 'Model ready!', 'Start typing to see predictions');
+                this.elements.textInput.disabled = false;
+                this.elements.textInput.focus();
+                this.elements.resetBtn.disabled = false;
+                this.updateStats();
+
+            } catch (error) {
+                console.error('Failed to initialize model:', error);
+                this.updateStatus('error', 'Initialization failed', error.message);
+                this.elements.initBtn.disabled = false;
+            }
+        }
+
+        resetModel() {
+            this.model.reset();
+            this.stats = { predictions: 0, suggestions: 0, responseTimes: [] };
+
+            this.updateStatus('loading', 'Model reset', 'Click initialize to start again');
+            this.elements.textInput.disabled = true;
+            this.elements.textInput.value = '';
+            this.elements.resetBtn.disabled = true;
+            this.elements.initBtn.disabled = false;
+            this.clearSuggestions();
+            this.updateStats();
+        }
+
+        handleInput(event) {
+            if (!this.model.isInitialized()) return;
+
+            const input = event.target.value;
+            const startTime = performance.now();
+
+            if (input.trim() === '') {
+                this.clearSuggestions();
+                return;
+            }
+
+            // Determine if we should predict or complete
+            const words = input.split(' ');
+            const lastWord = words[words.length - 1];
+            const isCompletingWord = !input.endsWith(' ') && lastWord.length > 0;
+
+            let suggestions = [];
+            let type = '';
+
+            if (isCompletingWord) {
+                // Word completion
+                suggestions = this.model.completeWithConfidence(lastWord);
+                type = 'Word Completion';
+                this.elements.suggestionType.textContent = 'Completing';
+                this.elements.suggestionType.style.background = '#e8f5e8';
+                this.elements.suggestionType.style.color = '#2e7d32';
+            } else {
+                // Next word prediction
+                const previousWord = words[words.length - 2] || words[words.length - 1];
+                suggestions = this.model.predictWithConfidence(previousWord)
+                type = 'Next Word Prediction';
+                this.elements.suggestionType.textContent = 'Predicting';
+                this.elements.suggestionType.style.background = '#e3f2fd';
+                this.elements.suggestionType.style.color = '#1976d2';
+            }
+
+            const endTime = performance.now();
+            this.recordResponseTime(endTime - startTime);
+
+            this.displaySuggestions(suggestions, isCompletingWord);
+            this.stats.predictions++;
+            this.updateStats();
+        }
+
+        handleSuggestionClick(event) {
+            if (!event.target.classList.contains('suggestion-btn')) return;
+
+            const suggestion = event.target.textContent.split(" - ")[1];
+            const input = this.elements.textInput.value;
+            const words = input.split(' ');
+
+            if (input.endsWith(' ')) {
+                // Adding new word
+                this.elements.textInput.value = input + suggestion + ' ';
+            } else {
+                // Completing current word
+                words[words.length - 1] = suggestion;
+                this.elements.textInput.value = words.join(' ') + ' ';
+            }
+
+            this.elements.textInput.focus();
+
+            // Trigger input event to get new predictions
+            this.elements.textInput.dispatchEvent(new Event('input'));
+        }
+
+        displaySuggestions(suggestions, isCompleting) {
+            this.clearSuggestions();
+
+            if (suggestions.length === 0) {
+                this.elements.suggestionsGrid.innerHTML = '<div class="empty-state">No suggestions available</div>';
+                return;
+            }
+
+            suggestions.slice(0, 10).forEach(suggestion => {
+                const button = document.createElement('button');
+                button.className = 'suggestion-btn';
+                button.textContent = suggestion.confidence+ " - "+suggestion.word;
+                this.elements.suggestionsGrid.appendChild(button);
+            });
+
+            this.stats.suggestions += suggestions.length;
+        }
+
+        clearSuggestions() {
+            this.elements.suggestionsGrid.innerHTML = '<div class="empty-state">Start typing to see suggestions</div>';
+            this.elements.suggestionType.textContent = 'Ready';
+            this.elements.suggestionType.style.background = '#e3f2fd';
+            this.elements.suggestionType.style.color = '#1976d2';
+        }
+
+        updateStatus(type, title, description) {
+            this.elements.status.className = `status ${type}`;
+
+            const icons = {
+                loading: '⏳',
+                ready: '✅',
+                error: '❌'
+            };
+
+            this.elements.status.innerHTML = `
+                    <div class="status-icon">${icons[type]}</div>
+                    <div>
+                        <strong>${title}</strong>
+                        <div>${description}</div>
+                    </div>
+                `;
+        }
+
+        recordResponseTime(time) {
+            this.stats.responseTimes.push(time);
+            if (this.stats.responseTimes.length > 100) {
+                this.stats.responseTimes = this.stats.responseTimes.slice(-50);
+            }
+        }
+
+        getAverageResponseTime() {
+            if (this.stats.responseTimes.length === 0) return 0;
+            const sum = this.stats.responseTimes.reduce((a, b) => a + b, 0);
+            return Math.round(sum / this.stats.responseTimes.length);
+        }
+
+        updateStats() {
+            this.elements.languageStat.textContent = this.model.getLanguage().toUpperCase();
+            this.elements.predictionsStat.textContent = this.stats.predictions.toLocaleString();
+            this.elements.suggestionsStat.textContent = this.stats.suggestions.toLocaleString();
+            this.elements.responseStat.textContent = `${this.getAverageResponseTime()}ms`;
+        }
+    }
+
+    // Initialize the interface when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        new PredictionInterface();
+    });
+</script>
+</body>
+</html>
